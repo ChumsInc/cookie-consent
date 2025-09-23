@@ -4,6 +4,7 @@
     "allowJs": false,
     "emitDeclarationOnly": false,
     "verbatimModuleSyntax": true,
+    "declaration": true,
     "outDir": "dist",
     "rootDir": "src",
 
