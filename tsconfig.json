@@ -1,0 +1,19 @@
+{
+  "extends": "@tsconfig/node22",
+  "compilerOptions": {
+    "allowJs": false,
+    "emitDeclarationOnly": false,
+    "verbatimModuleSyntax": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}
