@@ -1,21 +1,25 @@
 {
-  "name": "node-presets",
+  "name": "b2b-cookie-consent",
   "version": "1.0.0",
   "description": "A template for node projects",
-  "homepage": "https://github.com/ChumsInc/node-presets#readme",
+  "homepage": "https://github.com/ChumsInc/b2b-cookie-consent#readme",
   "bugs": {
-    "url": "https://github.com/ChumsInc/node-presets/issues"
+    "url": "https://github.com/ChumsInc/b2b-cookie-consent/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ChumsInc/node-presets.git"
+    "url": "git+https://github.com/ChumsInc/b2b-cookie-consent.git"
   },
   "license": "ISC",
   "author": "Steve Montgomery",
   "type": "module",
-  "main": "index.js",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "src": "./src/index.ts",
   "scripts": {
-    "start": "nodemon index.js",
+    "build": "npm run clean && npm run build-ts",
+    "build-ts": "tsc",
+    "clean": "rimraf dist types",
     "test": "echo \"Error: no test specified\" && exit 1",
     "version": "auto-changelog -p && git add CHANGELOG.md"
   },
@@ -25,23 +29,27 @@
     "@types/cookie-parser": "^1.4.9",
     "@types/debug": "^4.1.12",
     "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.5.2",
     "auto-changelog": "^2.5.0",
+    "b2b-types": "github:ChumsInc/b2b-types",
     "chums-types": "github:ChumsInc/chums-types",
     "eslint": "^9.36.0",
     "globals": "^16.4.0",
     "nodemon": "^3.1.10",
+    "rimraf": "^6.0.1",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.44.1"
   },
   "dependencies": {
     "body-parser": "^2.2.0",
-    "chums-local-modules": "github:ChumsInc/chums-local-modules",
     "cookie-parser": "^1.4.7",
+    "dayjs": "^1.11.18",
     "debug": "^4.4.3",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
-    "helmet": "^8.1.0"
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.15.0"
   },
   "auto-changelog": {
     "template": "keepachangelog",

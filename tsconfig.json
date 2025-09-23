@@ -4,6 +4,8 @@
     "allowJs": false,
     "emitDeclarationOnly": false,
     "verbatimModuleSyntax": true,
+    "outDir": "dist",
+    "rootDir": "src",
 
     /* Linting */
     "strict": true,
@@ -14,6 +16,8 @@
     "noUncheckedSideEffectImports": true
   },
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "dist",
+    "eslint.config.ts"
   ]
 }
