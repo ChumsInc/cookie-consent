@@ -2,7 +2,7 @@ import Debug from "debug";
 import { consentCookieName, defaultCookieOptions } from "./settings.js";
 import { extendCookieConsentExpiry, loadCookieConsent, saveCookieConsent, saveGPCOptOut, shouldExtendCookieConsent } from "./db-handlers.js";
 import { getTokenUser } from "./token-handler.js";
-const debug = Debug('chums:src:cookie-consent:express-handlers');
+const debug = Debug('chums:cookie-consent:express-handlers');
 /**
  * cookieConsentHelper handles the following:
  *  - checks for Sec-GPC header and opts the user out of analytics and marketing if it is present
@@ -11,7 +11,7 @@ const debug = Debug('chums:src:cookie-consent:express-handlers');
  */
 export async function cookieConsentHelper(req, res, next) {
     try {
-        const uuid = req.signedCookies[consentCookieName] ?? null;
+        const uuid = req.signedCookies[consentCookieName] ?? req.cookies[consentCookieName] ?? null;
         const gpcSignal = req.headers['sec-gpc'] ?? null;
         if (!uuid && gpcSignal === '1') {
             const record = await saveGPCOptOut({
@@ -53,7 +53,7 @@ export const postCookieConsent = async (req, res) => {
     try {
         const user = await getTokenUser(req);
         const body = req.body;
-        const uuid = req.signedCookies[consentCookieName] ?? null;
+        const uuid = req.signedCookies[consentCookieName] ?? req.cookies[consentCookieName] ?? null;
         const props = {
             uuid: uuid,
             userId: user?.id ?? null,
@@ -86,7 +86,7 @@ export const getCookieConsent = async (req, res) => {
     try {
         const user = await getTokenUser(req);
         const consent = await loadCookieConsent({
-            uuid: req.cookies.consent_uuid ?? null,
+            uuid: req.signedCookies[consentCookieName] ?? null,
             userId: user?.id ?? null
         });
         res.json(consent);

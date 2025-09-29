@@ -2,7 +2,7 @@ import Debug from "debug";
 import { mysql2Pool } from "./mysql.js";
 import dayjs from 'dayjs';
 import { randomUUID } from "node:crypto";
-const debug = Debug('chums:src:cookie-consent');
+const debug = Debug('chums:cookie-consent:db-handlers');
 /**
  * Saves an opt-out record for the user
  *  - if the user already has a cookie consent record, it will be updated to set gpc = true and record the change
@@ -30,7 +30,7 @@ export async function saveGPCOptOut(props) {
             });
         }
         const change = {
-            accepted: [],
+            accepted: record.preferences.preferences ? ['functional', 'preferences'] : ['functional'],
             rejected: ['marketing', 'analytics'],
             url: props.url,
             timestamp: new Date().toISOString(),

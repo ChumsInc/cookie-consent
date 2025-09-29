@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import Debug from "debug";
 import { loadUserIdFromEmail } from "./db-handlers.js";
-const debug = Debug('chums:src:token-handler');
+const debug = Debug('chums:cookie-consent:token-handler');
 export const jwtToken = (req) => {
     const authorization = req.header('authorization');
     if (!authorization) {

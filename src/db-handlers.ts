@@ -6,7 +6,7 @@ import type {ResultSetHeader, RowDataPacket} from "mysql2";
 import {randomUUID} from "node:crypto";
 import type {CookieConsentRow, LoadCookieConsentProps, SaveCookieConsentProps, SaveGPCOptOutProps} from "./types.js";
 
-const debug = Debug('chums:src:cookie-consent');
+const debug = Debug('chums:cookie-consent:db-handlers');
 
 /**
  * Saves an opt-out record for the user
@@ -35,7 +35,7 @@ export async function saveGPCOptOut(props: SaveGPCOptOutProps): Promise<CookieCo
             })
         }
         const change: CookieConsentChange = {
-            accepted: [],
+            accepted: record.preferences.preferences ? ['functional', 'preferences'] : ['functional'],
             rejected: ['marketing', 'analytics'],
             url: props.url,
             timestamp: new Date().toISOString(),

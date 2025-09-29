@@ -8,7 +8,7 @@ import type {UserProfile} from "b2b-types";
 import {loadUserIdFromEmail} from "./db-handlers.js";
 
 
-const debug = Debug('chums:src:token-handler');
+const debug = Debug('chums:cookie-consent:token-handler');
 
 export const jwtToken = (req: Request): string | null => {
     const authorization = req.header('authorization')
