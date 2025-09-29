@@ -1,63 +1,13 @@
 import Debug from "debug";
-import { mysql2Pool } from "./mysql.js";
-import dayjs from 'dayjs';
-import { randomUUID } from "node:crypto";
+import type {CookieConsentChange, CookieConsentRecord, CookieConsentSettings} from "chums-types";
+import {mysql2Pool} from "./mysql.js";
+import dayjs from 'dayjs'
+import type {ResultSetHeader, RowDataPacket} from "mysql2";
+import {randomUUID} from "node:crypto";
+import type {CookieConsentRow, LoadCookieConsentProps, SaveCookieConsentProps, SaveGPCOptOutProps} from "./types.js";
+
 const debug = Debug('chums:src:cookie-consent');
-/**
- * A globally accessible name for the cookie that stores the cookie consent uuid
- */
-export const consentCookieName = 'cookie_consent';
-/**
- * Sets the "cookie_consent" cookie with an age of 400 days (400 days is the max allowed by Google Chrome)
- * @param res
- * @param uuid
- */
-export function setConsentCookie(res, uuid) {
-    res.cookie(consentCookieName, uuid, {
-        httpOnly: true,
-        signed: true,
-        maxAge: 1000 * 60 * 60 * 24 * 400,
-        sameSite: 'strict',
-        secure: true
-    });
-}
-/**
- * cookieConsentHelper handles the following:
- *  - checks for Sec-GPC header and opts the user out of analytics and marketing if it is present
- *  - sets a "cookie_consent" cookie if Sec-GPC is present
- *  - renews a "cookie_consent" cookie if needed (with a new expiration date)
- */
-export async function cookieConsentHelper(req, res, next) {
-    try {
-        const uuid = req.signedCookies[consentCookieName] ?? null;
-        const gpcSignal = req.headers['sec-gpc'] ?? null;
-        if (!uuid && gpcSignal === '1') {
-            const record = await saveOptOutUser({
-                ipAddress: req.ip ?? 'not supplied',
-                url: req.get('referrer') ?? req.originalUrl ?? 'not supplied',
-            });
-            if (record) {
-                setConsentCookie(res, record.uuid);
-            }
-        }
-        else if (uuid) {
-            const record = await loadCookieConsent({ uuid });
-            if (record && shouldExtendCookieConsent(record)) {
-                await extendCookieConsentExpiry(record.uuid);
-                setConsentCookie(res, record.uuid);
-            }
-        }
-        next();
-    }
-    catch (err) {
-        if (err instanceof Error) {
-            debug("cookieConsentHelper()", err.message);
-            res.json({ error: err.message, name: err.name });
-            return;
-        }
-        res.json({ error: 'unknown error in cookieConsentHelper' });
-    }
-}
+
 /**
  * Saves an opt-out record for the user
  *  - if the user already has a cookie consent record, it will be updated to set gpc = true and record the change
@@ -65,15 +15,16 @@ export async function cookieConsentHelper(req, res, next) {
  *
  * @param props
  */
-export async function saveOptOutUser(props) {
+export async function saveGPCOptOut(props: SaveGPCOptOutProps): Promise<CookieConsentRecord | null> {
     try {
-        const consent = await loadCookieConsent({ uuid: props.uuid });
-        if (consent?.gpc) {
-            return consent;
+        const record = await loadCookieConsent({uuid: props.uuid});
+        if (record?.gpc) {
+            return record;
         }
-        if (!consent) {
+        if (!record) {
             return await saveCookieConsent({
                 ...props,
+                ack: false,
                 action: {
                     accepted: ['functional', 'preferences'],
                     rejected: ['marketing', 'analytics'],
@@ -81,27 +32,34 @@ export async function saveOptOutUser(props) {
                     method: 'header:sec-gpc'
                 },
                 gpc: true,
-            });
+            })
         }
-        const change = {
+        const change: CookieConsentChange = {
             accepted: [],
-            rejected: [],
+            rejected: ['marketing', 'analytics'],
             url: props.url,
             timestamp: new Date().toISOString(),
             method: 'header:sec-gpc'
-        };
+        }
         const sql = `UPDATE users.cookieConsentLog
-                     SET gpc = :gpc
+                     SET gpc         = :gpc,
+                         preferences = :preferences,
+                         changes     = :changes
                      WHERE uuid = :uuid`;
         const data = {
             uuid: props.uuid,
             gpc: true,
-            changes: JSON.stringify([...consent.changes, change])
-        };
+            preferences: JSON.stringify({
+                functional: record.preferences.functional ?? true,
+                preferences: record.preferences.preferences ?? true,
+                analytics: false,
+                marketing: false,
+            }),
+            changes: JSON.stringify([...record.changes, change]),
+        }
         await mysql2Pool.query(sql, data);
-        return await loadCookieConsent({ uuid: props.uuid });
-    }
-    catch (err) {
+        return await loadCookieConsent({uuid: props.uuid});
+    } catch (err: unknown) {
         if (err instanceof Error) {
             debug("gpcOptOutUser()", err.message);
             return Promise.reject(err);
@@ -110,48 +68,61 @@ export async function saveOptOutUser(props) {
         return Promise.reject(new Error('Error in gpcOptOutUser()'));
     }
 }
-export async function loadUserIdFromEmail(email) {
+
+export async function loadUserIdFromEmail(email: string): Promise<number | null> {
     const sql = `SELECT id
                  FROM users.users
                  WHERE email = :email`;
-    const data = { email: email };
-    const [rows] = await mysql2Pool.query(sql, data);
+    const data = {email: email}
+    const [rows] = await mysql2Pool.query<RowDataPacket[]>(sql, data);
     if (rows.length === 0) {
         return null;
     }
     return rows[0].id;
 }
+
 /**
  * Saves a cookie consent record for the user
  *  - if the user already has a cookie consent record, it will be updated to record the change
  *  - if the user does not have a cookie consent record, it will be created
  *
  */
-export async function saveCookieConsent({ uuid, userId, url, ipAddress, action, gpc }) {
+export async function saveCookieConsent({
+                                            uuid,
+                                            userId,
+                                            url,
+                                            ack,
+                                            ipAddress,
+                                            action,
+                                            gpc
+                                        }: SaveCookieConsentProps): Promise<CookieConsentRecord | null> {
     try {
-        const sqlInsert = `INSERT INTO users.cookieConsentLog (uuid, userId, url, ipAddress, preferences, gpc, changes,
+        const sqlInsert = `INSERT INTO users.cookieConsentLog (uuid, userId, url, ipAddress,
+                                                               ack, preferences, gpc, changes,
                                                                status, dateExpires)
-                           VALUES (:uuid, :userId, :url, :ipAddress, :preferences, :gpc, :changes, :status,
+                           VALUES (:uuid, :userId, :url, :ipAddress, :ack, :preferences, :gpc, :changes, :status,
                                    DATE_ADD(NOW(), INTERVAL 1 YEAR))`;
         const sqlUpdate = `UPDATE users.cookieConsentLog
                            SET userId      = :userId,
                                ipAddress   = :ipAddress,
+                               ack         = :ack,
                                preferences = :preferences,
                                gpc         = :gpc,
                                changes     = :changes,
                                status      = :status,
                                dateExpires = DATE_ADD(NOW(), INTERVAL 1 YEAR)
                            WHERE uuid = :uuid`;
-        let consent = null;
-        const preferences = {
+
+        let consent: CookieConsentRecord | null = null;
+        const preferences: CookieConsentSettings = {
             functional: true,
             preferences: action.accepted.includes('preferences'),
             analytics: action.accepted.includes('analytics'),
             marketing: action.accepted.includes('marketing'),
         };
-        const changes = [];
+        const changes: CookieConsentChange[] = [];
         if (uuid || userId) {
-            consent = await loadCookieConsent({ uuid, userId });
+            consent = await loadCookieConsent({uuid, userId});
             if (consent) {
                 changes.push(...consent.changes);
             }
@@ -161,21 +132,22 @@ export async function saveCookieConsent({ uuid, userId, url, ipAddress, action, 
             url: action.url ?? url,
             timestamp: new Date().toISOString()
         });
+
         const data = {
             uuid: consent?.uuid ?? randomUUID(),
             url: url,
             userId: consent?.userId ?? userId,
             ipAddress: ipAddress,
+            ack: consent?.ack ?? ack ?? false,
             preferences: JSON.stringify(preferences),
             changes: JSON.stringify(changes),
             status: getPreferencesStatus(preferences),
             gpc: gpc ?? consent?.gpc ?? false,
-        };
+        }
         const sql = consent?.uuid ? sqlUpdate : sqlInsert;
-        const [status] = await mysql2Pool.query(sql, data);
-        return await loadCookieConsent({ id: status.insertId });
-    }
-    catch (err) {
+        const [status] = await mysql2Pool.query<ResultSetHeader>(sql, data);
+        return await loadCookieConsent({id: status.insertId});
+    } catch (err: unknown) {
         if (err instanceof Error) {
             debug("saveCookieConsent()", err.message);
             return Promise.reject(err);
@@ -184,21 +156,21 @@ export async function saveCookieConsent({ uuid, userId, url, ipAddress, action, 
         return Promise.reject(new Error('Error in saveCookieConsent()'));
     }
 }
+
 /**
  * Updates the cookie consent record for the user to a current expiration date
  *  - the expiration date is not normally checked but is there for audit purposes
  * @param uuid
  */
-export async function extendCookieConsentExpiry(uuid) {
+export async function extendCookieConsentExpiry(uuid: string): Promise<CookieConsentRecord | null> {
     try {
         const sql = `UPDATE users.cookieConsentLog
                      SET dateExpires = DATE_ADD(NOW(), INTERVAL 1 YEAR)
                      WHERE uuid = :uuid`;
-        const data = { uuid: uuid };
+        const data = {uuid: uuid}
         await mysql2Pool.query(sql, data);
-        return await loadCookieConsent({ uuid });
-    }
-    catch (err) {
+        return await loadCookieConsent({uuid});
+    } catch (err: unknown) {
         if (err instanceof Error) {
             debug("extendCookieConsentExpiry()", err.message);
             return Promise.reject(err);
@@ -207,22 +179,25 @@ export async function extendCookieConsentExpiry(uuid) {
         return Promise.reject(new Error('Error in extendCookieConsentExpiry()'));
     }
 }
+
 /**
  * Checks if the cookie consent record is more than 30 days old, and therefore should be extended
  * @param consent
  */
-export function shouldExtendCookieConsent(consent) {
+export function shouldExtendCookieConsent(consent: CookieConsentRecord): boolean {
     return dayjs(consent.dateExpires).diff(dayjs(), 'day') > 30;
 }
+
 /**
  * Loads a cookie consent record for the user by id, uuid, or userId
  */
-export async function loadCookieConsent(props) {
+export async function loadCookieConsent(props: LoadCookieConsentProps): Promise<CookieConsentRecord | null> {
     try {
         const sql = `SELECT uuid,
                             userId,
                             url,
                             ipAddress,
+                            ack,
                             JSON_OBJECT(preferences, '$')           AS preferences,
                             JSON_OBJECT(IFNULL(changes, '[]'), '$') AS changes,
                             status,
@@ -237,20 +212,20 @@ export async function loadCookieConsent(props) {
             id: props.id ?? null,
             uuid: props.uuid ?? null,
             userId: props.userId ?? null,
-        };
-        const [rows] = await mysql2Pool.query(sql, args);
+        }
+        const [rows] = await mysql2Pool.query<CookieConsentRow[]>(sql, args);
         if (rows.length === 0) {
             return null;
         }
         const row = rows[0];
         return {
             ...row,
+            ack: !!row.ack,
             preferences: JSON.parse(row.preferences),
             gpc: !!row.gpc,
             changes: JSON.parse(row.changes),
-        };
-    }
-    catch (err) {
+        }
+    } catch (err: unknown) {
         if (err instanceof Error) {
             debug("loadCookieConsent()", err.message);
             return Promise.reject(err);
@@ -259,18 +234,19 @@ export async function loadCookieConsent(props) {
         return Promise.reject(new Error('Error in loadCookieConsent()'));
     }
 }
+
 /**
  * Returns the status of the preferences based on the preferences
  *  - if all preferences are accepted, the status is "accepted"
  *  - if all preferences are rejected, the status is "rejected"
  *  - if some preferences are accepted and some are rejected, the status is "partial"
  */
-function getPreferencesStatus(preferences) {
+function getPreferencesStatus(preferences: CookieConsentSettings): string {
     if (preferences.functional && preferences.preferences && preferences.analytics && preferences.marketing) {
         return 'accepted';
     }
     if (!(preferences.functional || preferences.preferences || preferences.analytics || preferences.marketing)) {
         return 'rejected';
     }
-    return 'partial';
+    return 'partial'
 }

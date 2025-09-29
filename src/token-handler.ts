@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import Debug from "debug";
 import type {GoogleJWTToken} from "./types.js";
 import type {UserProfile} from "b2b-types";
-import {loadUserIdFromEmail} from "./cookie-consent.js";
+import {loadUserIdFromEmail} from "./db-handlers.js";
 
 
 const debug = Debug('chums:src:token-handler');
