@@ -1,14 +1,14 @@
 {
-  "name": "b2b-cookie-consent",
+  "name": "cookie-consent",
   "version": "1.0.1",
   "description": "A template for node projects",
-  "homepage": "https://github.com/ChumsInc/b2b-cookie-consent#readme",
+  "homepage": "https://github.com/ChumsInc/cookie-consent#readme",
   "bugs": {
-    "url": "https://github.com/ChumsInc/b2b-cookie-consent/issues"
+    "url": "https://github.com/ChumsInc/cookie-consent/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ChumsInc/b2b-cookie-consent.git"
+    "url": "git+https://github.com/ChumsInc/cookie-consent.git"
   },
   "license": "ISC",
   "author": "Steve Montgomery",
