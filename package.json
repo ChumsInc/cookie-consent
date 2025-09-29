@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ChumsInc/cookie-consent.git"
+    "url": "git+https://cookie-consent.git"
   },
   "license": "ISC",
   "author": "Steve Montgomery",
