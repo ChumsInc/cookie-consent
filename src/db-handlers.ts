@@ -198,8 +198,8 @@ export async function loadCookieConsent(props: LoadCookieConsentProps): Promise<
                             url,
                             ipAddress,
                             ack,
-                            JSON_OBJECT(preferences, '$')           AS preferences,
-                            JSON_OBJECT(IFNULL(changes, '[]'), '$') AS changes,
+                            JSON_EXTRACT(preferences, '$')           AS preferences,
+                            JSON_EXTRACT(IFNULL(changes, '[]'), '$') AS changes,
                             status,
                             dateCreated,
                             dateUpdated
