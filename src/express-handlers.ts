@@ -9,7 +9,7 @@ import {
 } from "./db-handlers.js";
 import type {CookieConsentBody, ValidatedUser} from "chums-types";
 import {getTokenUser} from "./token-handler.js";
-import type {SaveCookieConsentProps} from "./types.js";
+import type {HasUUID, SaveCookieConsentProps} from "./types.js";
 
 const debug = Debug('chums:cookie-consent:express-handlers');
 
@@ -23,7 +23,7 @@ const hasGPCSignal = (req: Request): boolean => {
  *  - sets a "cookie_consent" cookie if Sec-GPC is present
  *  - renews a "cookie_consent" cookie if needed (with a new expiration date)
  */
-export async function cookieConsentHelper(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function cookieConsentHelper(req: Request, res: Response<unknown, HasUUID>, next: NextFunction): Promise<void> {
     try {
         const uuid = req.signedCookies[consentCookieName] ?? req.cookies[consentCookieName] ?? null;
         if (!uuid && hasGPCSignal(req)) {
@@ -32,6 +32,7 @@ export async function cookieConsentHelper(req: Request, res: Response, next: Nex
                 url: req.get('referrer') ?? req.originalUrl ?? 'not supplied',
             });
             if (record) {
+                res.locals.uuid = record.uuid;
                 setConsentCookie(res, record.uuid);
             }
         } else if (uuid) {

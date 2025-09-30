@@ -21,6 +21,7 @@ export async function cookieConsentHelper(req, res, next) {
                 url: req.get('referrer') ?? req.originalUrl ?? 'not supplied',
             });
             if (record) {
+                res.locals.uuid = record.uuid;
                 setConsentCookie(res, record.uuid);
             }
         }

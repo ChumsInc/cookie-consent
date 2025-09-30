@@ -33,3 +33,7 @@ export interface CookieConsentRow extends Omit<CookieConsentRecord, 'preferences
 }
 
 export type SaveGPCOptOutProps = Pick<SaveCookieConsentProps, 'uuid' | 'userId' | 'url' | 'ipAddress'>
+
+export type HasUUID = {
+    uuid?: string
+}

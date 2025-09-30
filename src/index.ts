@@ -12,5 +12,5 @@ export {loadCookieConsent, saveCookieConsent} from './db-handlers.js'
 
 export {consentCookieName, defaultCookieOptions} from './settings.js'
 
-export type {SaveCookieConsentProps, LoadCookieConsentProps, SaveGPCOptOutProps} from './types.js'
+export type {SaveCookieConsentProps, LoadCookieConsentProps, SaveGPCOptOutProps, HasUUID} from './types.js'
 export type {CookieConsentRecord} from 'chums-types'
