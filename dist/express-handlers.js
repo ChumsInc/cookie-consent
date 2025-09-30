@@ -65,7 +65,6 @@ export const postCookieConsent = async (req, res) => {
                 method: 'POST'
             }
         };
-        debug("postCookieConsent()", props);
         const result = await saveCookieConsent(props);
         if (!result) {
             res.json({ error: 'Error saving cookie consent' });
