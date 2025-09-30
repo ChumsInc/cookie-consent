@@ -14,6 +14,7 @@ import type {SaveCookieConsentProps} from "./types.js";
 const debug = Debug('chums:cookie-consent:express-handlers');
 
 const hasGPCSignal = (req: Request): boolean => {
+    return req.headers['sec-gpc'] === '1';
     const gpcSignal = req.headers['sec-gpc'] ?? null;
     return gpcSignal === '1';
 }
