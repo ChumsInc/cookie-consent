@@ -19,6 +19,7 @@
   "exclude": [
     "node_modules",
     "dist",
-    "eslint.config.ts"
+    "eslint.config.ts",
+    "copy-dts.js"
   ]
 }

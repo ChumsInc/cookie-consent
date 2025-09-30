@@ -18,6 +18,7 @@
   "src": "./src/index.ts",
   "scripts": {
     "build": "npm run clean && npm run build-ts",
+    "postbuild": "node copy-dts.js",
     "build-ts": "tsc",
     "clean": "rimraf dist types",
     "test": "echo \"Error: no test specified\" && exit 1",
