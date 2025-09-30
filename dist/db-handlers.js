@@ -128,8 +128,11 @@ export async function saveCookieConsent({ uuid, userId, url, ack, ipAddress, act
             status: getPreferencesStatus(preferences),
             gpc: gpc ?? consent?.gpc ?? false,
         };
-        const sql = consent?.uuid ? sqlUpdate : sqlInsert;
-        const [status] = await mysql2Pool.query(sql, data);
+        if (consent?.uuid) {
+            await mysql2Pool.query(sqlUpdate, data);
+            return await loadCookieConsent({ uuid: consent.uuid });
+        }
+        const [status] = await mysql2Pool.query(sqlInsert, data);
         return await loadCookieConsent({ id: status.insertId });
     }
     catch (err) {
