@@ -13,6 +13,11 @@ import type {SaveCookieConsentProps} from "./types.js";
 
 const debug = Debug('chums:cookie-consent:express-handlers');
 
+const hasGPCSignal = (req: Request): boolean => {
+    const gpcSignal = req.headers['sec-gpc'] ?? null;
+    return gpcSignal === '1';
+}
+
 /**
  * cookieConsentHelper handles the following:
  *  - checks for Sec-GPC header and opts the user out of analytics and marketing if it is present
@@ -22,8 +27,7 @@ const debug = Debug('chums:cookie-consent:express-handlers');
 export async function cookieConsentHelper(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
         const uuid = req.signedCookies[consentCookieName] ?? req.cookies[consentCookieName] ?? null;
-        const gpcSignal = req.headers['sec-gpc'] ?? null;
-        if (!uuid && gpcSignal === '1') {
+        if (!uuid && hasGPCSignal(req)) {
             const record = await saveGPCOptOut({
                 ipAddress: req.ip ?? 'not supplied',
                 url: req.get('referrer') ?? req.originalUrl ?? 'not supplied',
@@ -69,6 +73,7 @@ export const postCookieConsent = async (req: Request, res: Response<unknown, Val
             uuid: uuid,
             userId: user?.id ?? null,
             ack: true,
+            gpc: hasGPCSignal(req),
             ipAddress: req.ip ?? 'not supplied',
             url: req.get('referrer') ?? req.originalUrl ?? 'not supplied',
             action: {
