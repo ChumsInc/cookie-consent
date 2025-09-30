@@ -122,7 +122,7 @@ export async function saveCookieConsent({ uuid, userId, url, ack, ipAddress, act
             url: url,
             userId: consent?.userId ?? userId,
             ipAddress: ipAddress,
-            ack: consent?.ack ?? ack ?? false,
+            ack: ack ?? false,
             preferences: JSON.stringify(preferences),
             changes: JSON.stringify(changes),
             status: getPreferencesStatus(preferences),
