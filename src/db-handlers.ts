@@ -146,7 +146,7 @@ export async function saveCookieConsent({
         }
         if (consent?.uuid) {
             await mysql2Pool.query(sqlUpdate, data);
-            return await loadCookieConsent({uuid: consent.uuid});
+            return await loadCookieConsent({uuid: consent!.uuid});
         }
         const [status] = await mysql2Pool.query<ResultSetHeader>(sqlInsert, data);
         return await loadCookieConsent({id: status.insertId});
