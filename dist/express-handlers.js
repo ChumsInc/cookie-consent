@@ -38,6 +38,22 @@ export async function cookieConsentHelper(req, res, next) {
             return;
         }
         const record = await loadCookieConsent({ uuid });
+        if (!record && uuid && hasGPCSignal(req)) {
+            const userId = await getUserId(req, res);
+            const newRecord = await saveGPCOptOut({
+                ipAddress: req.ip ?? 'not supplied',
+                userId: userId ?? res.locals.auth?.profile?.user?.id ?? null,
+                url: req.get('referrer') ?? req.originalUrl ?? 'not supplied',
+            });
+            if (newRecord) {
+                res.cookie(consentCookieName, newRecord?.uuid, defaultCookieOptions);
+            }
+            else {
+                res.clearCookie(consentCookieName);
+            }
+            next();
+            return;
+        }
         if (record && hasGPCSignal(req) && !record.gpc) {
             await saveGPCOptOut({
                 uuid: uuid,
