@@ -1,10 +1,9 @@
-import type { Request } from "express";
-import type { UserJWTToken } from "chums-types";
+import type { Request, Response } from "express";
+import type { UserJWTToken, ValidatedUser } from "chums-types";
 import type { JwtPayload } from 'jsonwebtoken';
 import type { GoogleJWTToken } from "./types.js";
-import type { UserProfile } from "b2b-types";
 export declare const jwtToken: (req: Request) => string | null;
-export declare function getTokenUser(req: Request): Promise<Pick<UserProfile, 'id' | 'email'> | null>;
+export declare function getUserId(req: Request, res: Response<unknown, ValidatedUser>): Promise<number | null>;
 /**
  * Validates a JTW Token
  */

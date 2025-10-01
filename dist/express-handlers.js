@@ -1,7 +1,7 @@
 import Debug from "debug";
 import { consentCookieName, defaultCookieOptions } from "./settings.js";
 import { extendCookieConsentExpiry, loadCookieConsent, saveCookieConsent, saveGPCOptOut, shouldExtendCookieConsent } from "./db-handlers.js";
-import { getTokenUser } from "./token-handler.js";
+import { getUserId } from "./token-handler.js";
 const debug = Debug('chums:cookie-consent:express-handlers');
 const hasGPCSignal = (req) => {
     return req.headers['sec-gpc'] === '1';
@@ -15,22 +15,34 @@ const hasGPCSignal = (req) => {
 export async function cookieConsentHelper(req, res, next) {
     try {
         const uuid = req.signedCookies[consentCookieName] ?? req.cookies[consentCookieName] ?? null;
-        if (!uuid && hasGPCSignal(req)) {
+        if (!uuid) {
             const record = await saveGPCOptOut({
                 ipAddress: req.ip ?? 'not supplied',
+                userId: res.locals.auth?.profile?.user?.id ?? null,
                 url: req.get('referrer') ?? req.originalUrl ?? 'not supplied',
             });
             if (record) {
+                // set res.locals.uuid so that the next handler can use it to load the cookie consent record if needed
                 res.locals.uuid = record.uuid;
                 setConsentCookie(res, record.uuid);
             }
+            next();
+            return;
         }
-        else if (uuid) {
-            const record = await loadCookieConsent({ uuid });
-            if (record && shouldExtendCookieConsent(record)) {
-                await extendCookieConsentExpiry(record.uuid);
-                setConsentCookie(res, record.uuid);
+        const record = await loadCookieConsent({ uuid });
+        if (record && shouldExtendCookieConsent(record)) {
+            if (hasGPCSignal(req) && !record.gpc) {
+                await saveGPCOptOut({
+                    uuid: uuid,
+                    ipAddress: req.ip ?? 'not supplied',
+                    userId: record.userId ?? res.locals.auth?.profile?.user?.id ?? null,
+                    url: req.get('referrer') ?? req.originalUrl ?? 'not supplied',
+                });
             }
+            await extendCookieConsentExpiry(record.uuid);
+            setConsentCookie(res, record.uuid);
+            next();
+            return;
         }
         next();
     }
@@ -45,8 +57,6 @@ export async function cookieConsentHelper(req, res, next) {
 }
 /**
  * Sets the "cookie_consent" cookie with an age of 400 days (400 days is the max allowed by Google Chrome)
- * @param res
- * @param uuid
  */
 export function setConsentCookie(res, uuid) {
     res.cookie(consentCookieName, uuid, defaultCookieOptions);
@@ -54,12 +64,12 @@ export function setConsentCookie(res, uuid) {
 export const useCookieGPCHelper = () => cookieConsentHelper;
 export const postCookieConsent = async (req, res) => {
     try {
-        const user = await getTokenUser(req);
+        const userId = await getUserId(req, res);
         const body = req.body;
         const uuid = req.signedCookies[consentCookieName] ?? req.cookies[consentCookieName] ?? null;
         const props = {
             uuid: uuid,
-            userId: user?.id ?? null,
+            userId: userId,
             ack: true,
             gpc: hasGPCSignal(req),
             ipAddress: req.ip ?? 'not supplied',
@@ -88,10 +98,10 @@ export const postCookieConsent = async (req, res) => {
 };
 export const getCookieConsent = async (req, res) => {
     try {
-        const user = await getTokenUser(req);
+        const userId = await getUserId(req, res);
         const consent = await loadCookieConsent({
             uuid: req.signedCookies[consentCookieName] ?? null,
-            userId: user?.id ?? null
+            userId: userId
         });
         res.json(consent);
     }

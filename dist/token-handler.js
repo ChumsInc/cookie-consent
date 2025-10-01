@@ -13,22 +13,19 @@ export const jwtToken = (req) => {
     }
     return token;
 };
-export async function getTokenUser(req) {
+export async function getUserId(req, res) {
+    if (res.locals.auth?.profile?.user) {
+        return res.locals.auth.profile.user.id;
+    }
     const token = jwtToken(req);
     if (token) {
         const decoded = await validateToken(token);
         if (isLocalToken(decoded) && isBeforeExpiry(decoded)) {
-            return {
-                id: decoded.user.id,
-                email: decoded.user.email,
-            };
+            return decoded.user.id;
         }
         if (isGoogleToken(decoded) && isBeforeExpiry(decoded)) {
             const id = await loadUserIdFromEmail(decoded.email);
-            return {
-                id: id ?? 0,
-                email: decoded.email,
-            };
+            return id ?? null;
         }
     }
     return null;

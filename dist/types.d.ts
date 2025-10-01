@@ -21,7 +21,7 @@ export interface LoadCookieConsentProps extends Partial<Pick<CookieConsentRecord
 }
 
 export interface SaveCookieConsentProps extends Pick<CookieConsentRecord, 'ipAddress' | 'url'>, Partial<Pick<CookieConsentRecord, 'uuid' | 'gpc' | 'ack'>> {
-    userId?: number | null;
+    userId?: number | string | null;
     action: Omit<CookieConsentChange, 'url' | 'timestamp'> & Partial<Pick<CookieConsentChange, 'url'>>
 }
 
@@ -36,4 +36,9 @@ export type SaveGPCOptOutProps = Pick<SaveCookieConsentProps, 'uuid' | 'userId' 
 
 export interface HasUUID {
     uuid?: string
+}
+
+export interface CookieConsentOptions {
+    cookieName?: string;
+    verbose?: boolean;
 }

@@ -7,11 +7,9 @@ import type { HasUUID } from "./types.js";
  *  - sets a "cookie_consent" cookie if Sec-GPC is present
  *  - renews a "cookie_consent" cookie if needed (with a new expiration date)
  */
-export declare function cookieConsentHelper(req: Request, res: Response<unknown, HasUUID>, next: NextFunction): Promise<void>;
+export declare function cookieConsentHelper(req: Request, res: Response<unknown, HasUUID & ValidatedUser>, next: NextFunction): Promise<void>;
 /**
  * Sets the "cookie_consent" cookie with an age of 400 days (400 days is the max allowed by Google Chrome)
- * @param res
- * @param uuid
  */
 export declare function setConsentCookie(res: Response, uuid: string): void;
 export declare const useCookieGPCHelper: () => typeof cookieConsentHelper;

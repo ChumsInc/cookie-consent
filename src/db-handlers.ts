@@ -222,7 +222,7 @@ export async function loadCookieConsent(props: LoadCookieConsentProps): Promise<
             return null;
         }
         const row = rows[0];
-        if (dayjs(row.dateUpdated).diff(dayjs(), 'month') > 5) {
+        if (dayjs(row.dateUpdated).diff(dayjs(), 'month') >= 6) {
             row.ack = 0;
         }
         return {

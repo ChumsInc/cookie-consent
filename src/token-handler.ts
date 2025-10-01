@@ -1,10 +1,9 @@
-import type {Request} from "express";
-import type {UserJWTToken} from "chums-types";
+import type {Request, Response} from "express";
+import type {UserJWTToken, ValidatedUser} from "chums-types";
 import type {JwtPayload} from 'jsonwebtoken'
 import jwt from 'jsonwebtoken';
 import Debug from "debug";
 import type {GoogleJWTToken} from "./types.js";
-import type {UserProfile} from "b2b-types";
 import {loadUserIdFromEmail} from "./db-handlers.js";
 
 
@@ -24,22 +23,20 @@ export const jwtToken = (req: Request): string | null => {
     return token;
 };
 
-export async function getTokenUser(req: Request): Promise<Pick<UserProfile, 'id' | 'email'> | null> {
+export async function getUserId(req: Request, res: Response<unknown, ValidatedUser>): Promise<number | null> {
+    if (res.locals.auth?.profile?.user) {
+        return res.locals.auth.profile.user.id;
+    }
+
     const token = jwtToken(req);
     if (token) {
         const decoded = await validateToken<UserJWTToken | GoogleJWTToken>(token);
         if (isLocalToken(decoded) && isBeforeExpiry(decoded)) {
-            return {
-                id: decoded.user.id,
-                email: decoded.user.email,
-            };
+            return decoded.user.id;
         }
         if (isGoogleToken(decoded) && isBeforeExpiry(decoded)) {
             const id = await loadUserIdFromEmail(decoded.email);
-            return {
-                id: id ?? 0,
-                email: decoded.email,
-            }
+            return id ?? null;
         }
     }
     return null;
