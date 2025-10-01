@@ -69,6 +69,29 @@ export async function saveGPCOptOut(props) {
         return Promise.reject(new Error('Error in gpcOptOutUser()'));
     }
 }
+export async function updateUserId(uuid, userId) {
+    try {
+        const sql = `UPDATE users.cookieConsentLog
+                     SET userId = :userId
+                     WHERE uuid = :uuid`;
+        const data = {
+            uuid: uuid,
+            userId: userId
+        };
+        if (verbose)
+            debug("updateUserId()", data);
+        await mysql2Pool.query(sql, data);
+        return await loadCookieConsent({ uuid });
+    }
+    catch (err) {
+        if (err instanceof Error) {
+            debug("updateUserId()", err.message);
+            return Promise.reject(err);
+        }
+        debug("updateUserId()", err);
+        return Promise.reject(new Error('Error in updateUserId()'));
+    }
+}
 export async function loadUserIdFromEmail(email) {
     const sql = `SELECT id
                  FROM users.users

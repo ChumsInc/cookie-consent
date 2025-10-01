@@ -8,6 +8,7 @@ import type { LoadCookieConsentProps, SaveCookieConsentProps, SaveGPCOptOutProps
  * @param props
  */
 export declare function saveGPCOptOut(props: SaveGPCOptOutProps): Promise<CookieConsentRecord | null>;
+export declare function updateUserId(uuid: string, userId: string | number): Promise<CookieConsentRecord | null>;
 export declare function loadUserIdFromEmail(email: string): Promise<number | null>;
 /**
  * Saves a cookie consent record for the user

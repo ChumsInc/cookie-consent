@@ -72,6 +72,29 @@ export async function saveGPCOptOut(props: SaveGPCOptOutProps): Promise<CookieCo
     }
 }
 
+export async function updateUserId(uuid: string, userId: string|number): Promise<CookieConsentRecord | null> {
+    try {
+        const sql = `UPDATE users.cookieConsentLog
+                     SET userId = :userId
+                     WHERE uuid = :uuid`;
+        const data = {
+            uuid: uuid,
+            userId: userId
+        }
+        if (verbose) debug("updateUserId()", data);
+        await mysql2Pool.query(sql, data);
+        return await loadCookieConsent({uuid});
+    } catch(err:unknown) {
+        if (err instanceof Error) {
+            debug("updateUserId()", err.message);
+            return Promise.reject(err);
+        }
+        debug("updateUserId()", err);
+        return Promise.reject(new Error('Error in updateUserId()'));
+    }
+}
+
+
 export async function loadUserIdFromEmail(email: string): Promise<number | null> {
     const sql = `SELECT id
                  FROM users.users

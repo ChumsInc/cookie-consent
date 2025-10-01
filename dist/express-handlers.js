@@ -1,6 +1,6 @@
 import Debug from "debug";
 import { consentCookieName, defaultCookieOptions } from "./settings.js";
-import { extendCookieConsentExpiry, loadCookieConsent, saveCookieConsent, saveGPCOptOut, shouldExtendCookieConsent } from "./db-handlers.js";
+import { extendCookieConsentExpiry, loadCookieConsent, saveCookieConsent, saveGPCOptOut, shouldExtendCookieConsent, updateUserId } from "./db-handlers.js";
 import { getUserId, isAPIAuth } from "./token-handler.js";
 const debug = Debug('chums:cookie-consent:express-handlers');
 const hasGPCSignal = (req) => {
@@ -38,15 +38,21 @@ export async function cookieConsentHelper(req, res, next) {
             return;
         }
         const record = await loadCookieConsent({ uuid });
-        if (record && shouldExtendCookieConsent(record)) {
-            if (hasGPCSignal(req) && !record.gpc) {
-                await saveGPCOptOut({
-                    uuid: uuid,
-                    ipAddress: req.ip ?? 'not supplied',
-                    userId: record.userId ?? res.locals.auth?.profile?.user?.id ?? null,
-                    url: req.get('referrer') ?? req.originalUrl ?? 'not supplied',
-                });
+        if (record && hasGPCSignal(req) && !record.gpc) {
+            await saveGPCOptOut({
+                uuid: uuid,
+                ipAddress: req.ip ?? 'not supplied',
+                userId: record.userId ?? res.locals.auth?.profile?.user?.id ?? null,
+                url: req.get('referrer') ?? req.originalUrl ?? 'not supplied',
+            });
+        }
+        if (record && !record.userId) {
+            const userId = await getUserId(req, res);
+            if (userId) {
+                await updateUserId(record.uuid, userId);
             }
+        }
+        if (record && shouldExtendCookieConsent(record)) {
             await extendCookieConsentExpiry(record.uuid);
             setConsentCookie(res, record.uuid);
             next();
