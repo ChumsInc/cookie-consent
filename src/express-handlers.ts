@@ -8,7 +8,7 @@ import {
     shouldExtendCookieConsent
 } from "./db-handlers.js";
 import type {CookieConsentBody, ValidatedUser} from "chums-types";
-import {getUserId} from "./token-handler.js";
+import {getUserId, isAPIAuth} from "./token-handler.js";
 import type {HasUUID, SaveCookieConsentProps} from "./types.js";
 
 const debug = Debug('chums:cookie-consent:express-handlers');
@@ -26,6 +26,9 @@ const hasGPCSignal = (req: Request): boolean => {
  */
 export async function cookieConsentHelper(req: Request, res: Response<unknown, HasUUID & ValidatedUser>, next: NextFunction): Promise<void> {
     try {
+        if (isAPIAuth(req)) {
+            next();
+        }
         const uuid = req.signedCookies[consentCookieName] ?? req.cookies[consentCookieName] ?? null;
         if (!uuid) {
             const record = await saveGPCOptOut({

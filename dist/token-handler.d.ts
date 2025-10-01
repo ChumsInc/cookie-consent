@@ -3,6 +3,7 @@ import type { UserJWTToken, ValidatedUser } from "chums-types";
 import type { JwtPayload } from 'jsonwebtoken';
 import type { GoogleJWTToken } from "./types.js";
 export declare const jwtToken: (req: Request) => string | null;
+export declare function isAPIAuth(req: Request): boolean;
 export declare function getUserId(req: Request, res: Response<unknown, ValidatedUser>): Promise<number | null>;
 /**
  * Validates a JTW Token

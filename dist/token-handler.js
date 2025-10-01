@@ -17,6 +17,14 @@ export const jwtToken = (req) => {
     }
     return token;
 };
+export function isAPIAuth(req) {
+    const authorization = req.get('authorization');
+    if (!authorization) {
+        return false;
+    }
+    const [basic = ''] = authorization.split(' ');
+    return basic.trim().toLowerCase() === 'basic';
+}
 export async function getUserId(req, res) {
     if (res.locals.auth?.profile?.user) {
         if (verbose)

@@ -1,7 +1,7 @@
 import Debug from "debug";
 import { consentCookieName, defaultCookieOptions } from "./settings.js";
 import { extendCookieConsentExpiry, loadCookieConsent, saveCookieConsent, saveGPCOptOut, shouldExtendCookieConsent } from "./db-handlers.js";
-import { getUserId } from "./token-handler.js";
+import { getUserId, isAPIAuth } from "./token-handler.js";
 const debug = Debug('chums:cookie-consent:express-handlers');
 const hasGPCSignal = (req) => {
     return req.headers['sec-gpc'] === '1';
@@ -14,6 +14,9 @@ const hasGPCSignal = (req) => {
  */
 export async function cookieConsentHelper(req, res, next) {
     try {
+        if (isAPIAuth(req)) {
+            next();
+        }
         const uuid = req.signedCookies[consentCookieName] ?? req.cookies[consentCookieName] ?? null;
         if (!uuid) {
             const record = await saveGPCOptOut({

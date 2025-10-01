@@ -26,7 +26,19 @@ export const jwtToken = (req: Request): string | null => {
     return token;
 };
 
+export function isAPIAuth(req: Request):boolean {
+    const authorization = req.get('authorization');
+
+    if (!authorization) {
+        return false;
+    }
+
+    const [basic = ''] = authorization.split(' ');
+    return basic.trim().toLowerCase() === 'basic';
+}
+
 export async function getUserId(req: Request, res: Response<unknown, ValidatedUser>): Promise<number | null> {
+
     if (res.locals.auth?.profile?.user) {
         if (verbose) debug("getUserId() - using res.locals.auth.profile.user.id", res.locals.auth.profile.user.id);
         return res.locals.auth.profile.user.id;
@@ -42,7 +54,7 @@ export async function getUserId(req: Request, res: Response<unknown, ValidatedUs
         }
         if (isGoogleToken(decoded) && isBeforeExpiry(decoded)) {
             const id = await loadUserIdFromEmail(decoded.email);
-            if (verbose) debug('getUserId() - using google id', id ?? 'not found' );
+            if (verbose) debug('getUserId() - using google id', id ?? 'not found');
             return id ?? null;
         }
     }
