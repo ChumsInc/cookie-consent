@@ -32,6 +32,10 @@ export async function cookieConsentHelper(req: Request, res: Response<unknown, H
         }
         const uuid = req.signedCookies[consentCookieName] ?? req.cookies[consentCookieName] ?? null;
         if (!uuid) {
+            if (!hasGPCSignal(req)) {
+                next();
+                return;
+            }
             const record = await saveGPCOptOut({
                 ipAddress: req.ip ?? 'not supplied',
                 userId: res.locals.auth?.profile?.user?.id ?? null,
