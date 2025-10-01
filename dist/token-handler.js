@@ -84,12 +84,16 @@ export const isBeforeExpiry = (payload) => {
  * Checks to see if a token is locally issued
  */
 export const isLocalToken = (payload) => {
+    if (verbose)
+        debug("isLocalToken()", typeof payload);
     if (typeof payload === 'string') {
         payload = jwt.decode(payload);
     }
     if (!payload || typeof payload === 'string') {
         return false;
     }
+    if (verbose)
+        debug("isLocalToken()", payload?.iss, JWT_ISSUER);
     const { iss } = payload;
     return !!iss && iss === JWT_ISSUER;
 };
