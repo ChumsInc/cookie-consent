@@ -4,3 +4,4 @@ import type { CookieOptions } from "express";
  */
 export declare const consentCookieName: string;
 export declare const defaultCookieOptions: CookieOptions;
+export declare const verbose: boolean;

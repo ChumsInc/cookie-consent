@@ -12,3 +12,5 @@ export const defaultCookieOptions:CookieOptions = {
     sameSite: 'strict',
     secure: true
 };
+
+export const verbose = process.env.DEBUG_VERBOSE === 'true';

@@ -5,6 +5,7 @@ import dayjs from 'dayjs'
 import type {ResultSetHeader, RowDataPacket} from "mysql2";
 import {randomUUID} from "node:crypto";
 import type {CookieConsentRow, LoadCookieConsentProps, SaveCookieConsentProps, SaveGPCOptOutProps} from "./types.js";
+import {verbose} from "./settings.js";
 
 const debug = Debug('chums:cookie-consent:db-handlers');
 
@@ -17,6 +18,7 @@ const debug = Debug('chums:cookie-consent:db-handlers');
  */
 export async function saveGPCOptOut(props: SaveGPCOptOutProps): Promise<CookieConsentRecord | null> {
     try {
+        if (verbose) debug("saveGPCOptOut()", props);
         const record = await loadCookieConsent({uuid: props.uuid});
         if (record?.gpc) {
             return record;
@@ -57,6 +59,7 @@ export async function saveGPCOptOut(props: SaveGPCOptOutProps): Promise<CookieCo
             }),
             changes: JSON.stringify([...record.changes, change]),
         }
+        if (verbose) debug("saveGPCOptOut() - updating cookie consent record", data);
         await mysql2Pool.query(sql, data);
         return await loadCookieConsent({uuid: props.uuid});
     } catch (err: unknown) {
@@ -121,8 +124,8 @@ export async function saveCookieConsent({
             marketing: action.accepted.includes('marketing'),
         };
         const changes: CookieConsentChange[] = [];
-        if (uuid || userId) {
-            consent = await loadCookieConsent({uuid, userId});
+        if (uuid) {
+            consent = await loadCookieConsent({uuid});
             if (consent) {
                 changes.push(...consent.changes);
             }
@@ -144,6 +147,7 @@ export async function saveCookieConsent({
             status: getPreferencesStatus(preferences),
             gpc: gpc ?? consent?.gpc ?? false,
         }
+        if (verbose) debug("saveCookieConsent()", data);
         if (consent?.uuid) {
             await mysql2Pool.query(sqlUpdate, data);
             return await loadCookieConsent({uuid: consent!.uuid});
@@ -171,6 +175,7 @@ export async function extendCookieConsentExpiry(uuid: string): Promise<CookieCon
                      SET dateExpires = DATE_ADD(NOW(), INTERVAL 1 YEAR)
                      WHERE uuid = :uuid`;
         const data = {uuid: uuid}
+        if (verbose) debug("extendCookieConsentExpiry()", data);
         await mysql2Pool.query(sql, data);
         return await loadCookieConsent({uuid});
     } catch (err: unknown) {
@@ -217,6 +222,7 @@ export async function loadCookieConsent(props: LoadCookieConsentProps): Promise<
             uuid: props.uuid ?? null,
             userId: props.userId ?? null,
         }
+        if (verbose) debug("loadCookieConsent()", args);
         const [rows] = await mysql2Pool.query<CookieConsentRow[]>(sql, args);
         if (rows.length === 0) {
             return null;

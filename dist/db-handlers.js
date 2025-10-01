@@ -2,6 +2,7 @@ import Debug from "debug";
 import { mysql2Pool } from "./mysql.js";
 import dayjs from 'dayjs';
 import { randomUUID } from "node:crypto";
+import { verbose } from "./settings.js";
 const debug = Debug('chums:cookie-consent:db-handlers');
 /**
  * Saves an opt-out record for the user
@@ -12,6 +13,8 @@ const debug = Debug('chums:cookie-consent:db-handlers');
  */
 export async function saveGPCOptOut(props) {
     try {
+        if (verbose)
+            debug("saveGPCOptOut()", props);
         const record = await loadCookieConsent({ uuid: props.uuid });
         if (record?.gpc) {
             return record;
@@ -52,6 +55,8 @@ export async function saveGPCOptOut(props) {
             }),
             changes: JSON.stringify([...record.changes, change]),
         };
+        if (verbose)
+            debug("saveGPCOptOut() - updating cookie consent record", data);
         await mysql2Pool.query(sql, data);
         return await loadCookieConsent({ uuid: props.uuid });
     }
@@ -106,8 +111,8 @@ export async function saveCookieConsent({ uuid, userId, url, ack, ipAddress, act
             marketing: action.accepted.includes('marketing'),
         };
         const changes = [];
-        if (uuid || userId) {
-            consent = await loadCookieConsent({ uuid, userId });
+        if (uuid) {
+            consent = await loadCookieConsent({ uuid });
             if (consent) {
                 changes.push(...consent.changes);
             }
@@ -128,6 +133,8 @@ export async function saveCookieConsent({ uuid, userId, url, ack, ipAddress, act
             status: getPreferencesStatus(preferences),
             gpc: gpc ?? consent?.gpc ?? false,
         };
+        if (verbose)
+            debug("saveCookieConsent()", data);
         if (consent?.uuid) {
             await mysql2Pool.query(sqlUpdate, data);
             return await loadCookieConsent({ uuid: consent.uuid });
@@ -155,6 +162,8 @@ export async function extendCookieConsentExpiry(uuid) {
                      SET dateExpires = DATE_ADD(NOW(), INTERVAL 1 YEAR)
                      WHERE uuid = :uuid`;
         const data = { uuid: uuid };
+        if (verbose)
+            debug("extendCookieConsentExpiry()", data);
         await mysql2Pool.query(sql, data);
         return await loadCookieConsent({ uuid });
     }
@@ -200,6 +209,8 @@ export async function loadCookieConsent(props) {
             uuid: props.uuid ?? null,
             userId: props.userId ?? null,
         };
+        if (verbose)
+            debug("loadCookieConsent()", args);
         const [rows] = await mysql2Pool.query(sql, args);
         if (rows.length === 0) {
             return null;

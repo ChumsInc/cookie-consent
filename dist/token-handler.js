@@ -1,7 +1,11 @@
 import jwt from 'jsonwebtoken';
 import Debug from "debug";
 import { loadUserIdFromEmail } from "./db-handlers.js";
+import { verbose } from "./settings.js";
 const debug = Debug('chums:cookie-consent:token-handler');
+const JWT_SECRET = process.env.JWT_SECRET ?? 'NOT THE SECRET';
+const JWT_ISSUER = process.env.JWT_ISSUER ?? 'NOT THE ISSUER';
+const ERR_TOKEN_EXPIRED = 'TokenExpiredError';
 export const jwtToken = (req) => {
     const authorization = req.header('authorization');
     if (!authorization) {
@@ -15,23 +19,29 @@ export const jwtToken = (req) => {
 };
 export async function getUserId(req, res) {
     if (res.locals.auth?.profile?.user) {
+        if (verbose)
+            debug("getUserId() - using res.locals.auth.profile.user.id", res.locals.auth.profile.user.id);
         return res.locals.auth.profile.user.id;
     }
     const token = jwtToken(req);
     if (token) {
+        if (verbose)
+            debug("getUserId() - using token", token.slice(0, 10), '...');
         const decoded = await validateToken(token);
         if (isLocalToken(decoded) && isBeforeExpiry(decoded)) {
+            if (verbose)
+                debug("getUserId() - using decoded.user.id", decoded.user.id);
             return decoded.user.id;
         }
         if (isGoogleToken(decoded) && isBeforeExpiry(decoded)) {
             const id = await loadUserIdFromEmail(decoded.email);
+            if (verbose)
+                debug('getUserId() - using google id', id ?? 'not found');
             return id ?? null;
         }
     }
     return null;
 }
-const { JWT_ISSUER = 'NOT THE ISSUER', JWT_SECRET = 'NOT THE SECRET' } = process.env;
-const ERR_TOKEN_EXPIRED = 'TokenExpiredError';
 /**
  * Validates a JTW Token
  */
