@@ -16,6 +16,7 @@ export async function cookieConsentHelper(req, res, next) {
     try {
         if (isAPIAuth(req)) {
             next();
+            return;
         }
         const uuid = req.signedCookies[consentCookieName] ?? req.cookies[consentCookieName] ?? null;
         if (!uuid) {
