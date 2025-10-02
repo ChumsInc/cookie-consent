@@ -211,6 +211,9 @@ export function shouldExtendCookieConsent(consent) {
  */
 export async function loadCookieConsent(props) {
     try {
+        if (!props.uuid && !props.id && !props.userId) {
+            return null;
+        }
         const sql = `SELECT uuid,
                             userId,
                             url,

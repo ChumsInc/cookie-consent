@@ -224,6 +224,9 @@ export function shouldExtendCookieConsent(consent: CookieConsentRecord): boolean
  */
 export async function loadCookieConsent(props: LoadCookieConsentProps): Promise<CookieConsentRecord | null> {
     try {
+        if (!props.uuid && !props.id && !props.userId) {
+            return null;
+        }
         const sql = `SELECT uuid,
                             userId,
                             url,
