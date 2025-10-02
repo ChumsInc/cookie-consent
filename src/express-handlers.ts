@@ -31,6 +31,9 @@ export async function cookieConsentHelper(req: Request, res: Response<unknown, H
             return;
         }
         const uuid = req.signedCookies[consentCookieName] ?? req.cookies[consentCookieName] ?? null;
+        if (uuid) {
+            res.locals.uuid = uuid;
+        }
         if (!uuid) {
             if (!hasGPCSignal(req)) {
                 next();

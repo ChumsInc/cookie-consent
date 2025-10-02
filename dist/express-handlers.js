@@ -19,6 +19,9 @@ export async function cookieConsentHelper(req, res, next) {
             return;
         }
         const uuid = req.signedCookies[consentCookieName] ?? req.cookies[consentCookieName] ?? null;
+        if (uuid) {
+            res.locals.uuid = uuid;
+        }
         if (!uuid) {
             if (!hasGPCSignal(req)) {
                 next();
@@ -39,6 +42,7 @@ export async function cookieConsentHelper(req, res, next) {
         }
         const record = await loadCookieConsent({ uuid });
         if (!record && uuid && hasGPCSignal(req)) {
+            // this can be deleted after a short while - only here to fix a bug where records were being created for all calls to the API
             const userId = await getUserId(req, res);
             const newRecord = await saveGPCOptOut({
                 ipAddress: req.ip ?? 'not supplied',
