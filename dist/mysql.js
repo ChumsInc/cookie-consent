@@ -9,7 +9,6 @@ const config = {
     namedPlaceholders: true,
 };
 export async function getConnection() {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { connectionLimit, ...connectionConfig } = config;
     return createConnection({ ...connectionConfig });
 }
