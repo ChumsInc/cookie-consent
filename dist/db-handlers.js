@@ -224,7 +224,8 @@ export async function loadCookieConsent(props) {
                             gpc,
                             status,
                             dateCreated,
-                            dateUpdated
+                            dateUpdated,
+                            dateExpires
                      FROM users.cookieConsentLog
                      WHERE id = :id
                         OR uuid = :uuid

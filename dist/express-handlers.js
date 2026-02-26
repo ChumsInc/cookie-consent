@@ -101,13 +101,14 @@ export const postCookieConsent = async (req, res) => {
         const userId = await getUserId(req, res);
         const body = req.body;
         const uuid = req.signedCookies[consentCookieName] ?? req.cookies[consentCookieName] ?? null;
+        const url = (req.get('referrer') ?? req.originalUrl ?? 'not supplied').slice(0, 255);
         const props = {
             uuid: uuid,
             userId: userId,
             ack: true,
             gpc: hasGPCSignal(req),
             ipAddress: req.ip ?? 'not supplied',
-            url: req.get('referrer') ?? req.originalUrl ?? 'not supplied',
+            url: url,
             action: {
                 ...body,
                 method: 'POST'
