@@ -25,7 +25,7 @@
     "version": "auto-changelog -p && git add CHANGELOG.md"
   },
   "devDependencies": {
-    "@eslint/js": "^9.36.0",
+    "@eslint/js": "^10.0.1",
     "@tsconfig/node22": "^22.0.2",
     "@types/cookie-parser": "^1.4.9",
     "@types/debug": "^4.1.12",
@@ -35,7 +35,7 @@
     "auto-changelog": "^2.5.0",
     "b2b-types": "github:ChumsInc/b2b-types",
     "chums-types": "github:ChumsInc/chums-types",
-    "eslint": "^9.36.0",
+    "eslint": "^10.0.2",
     "globals": "^17.0.0",
     "nodemon": "^3.1.10",
     "rimraf": "^6.0.1",
